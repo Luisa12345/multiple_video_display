@@ -9,12 +9,28 @@ displays = [7] # HDMI 0 = 2, HDMI 1 = 7
 number_of_screens_per_display = 3
 screen_resolution_x = 1920
 screen_resolution_y = 1080
- 
+
+
+print("screen -dmS screen0 sh -c 'omxplayer --display \"7\" --win \"0,0,640,1080\" /media/pi/toshiba/test/MOV_0133.mp4; exec bash'")
+
+
+def get_available_files():
+	directory_path = '/media/pi/toshiba/test'
+	available_files = [f for f in listdir(directory_path) if isfile(join(directory_path, f))]
+	
+	return available_files
 
 # play a video on given display and screen area
-def play_video(display=7, screen_area='0,0,640,480', video='MOV_0860.mp4'):
+# def play_video(display=7, screen_area='0,0,640,480', video='MOV_0860.mp4'):
+def play_video(screen, video):
 	# omxplayer --display 7 --win 0,0,640,480 /media/pi/toshiba/test/MOV_0860.mp4^
-	bashCommand = 'omxplayer' +  '--display ' + str(display) + '--win ' + screen_area + '/media/pi/toshiba/test/' + video
+	display = screen['display']
+	screen_id = 'screen_' + str(screen['screen_id'])
+	screen_area = screen['screen_area']
+
+	bashCommand = 'screen -dmS ' + screen_id + ' sh -c ' + '\'' + 'omxplayer' +  ' --display ' + '"' + str(display) + '"' + ' --win ' + '"' + screen_area + '"' + ' /media/pi/toshiba/test/' + video + "; exec bash'"
+	print(bashCommand)
+	#exit()
 	process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE)
 	output, error = process.communicate()	
 
@@ -51,13 +67,17 @@ def get_screens():
 	return screens	
 
 
+def play_init_videos():
+	screens = get_screens()
+	available_videos = get_available_files()
+	for screen in screens:
+		play_video(screen, available_videos[screen['screen_id']])
 
-
-
-
-print(get_screens())
-#play_video()
-
+if __name__ == '__main__':
+	# init display of all screens with start videos
+	
+    play_init_videos()
+    
 
 # only worked once - why??
 def play_with_library():
