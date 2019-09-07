@@ -4,6 +4,7 @@ from omxplayer.player import OMXPlayer
 from pathlib import Path
 import time
 import subprocess
+from subprocess import run
 
 displays = [7] # HDMI 0 = 2, HDMI 1 = 7
 number_of_screens_per_display = 3
@@ -25,13 +26,14 @@ def get_available_files():
 def play_video(screen, video):
 	# omxplayer --display 7 --win 0,0,640,480 /media/pi/toshiba/test/MOV_0860.mp4^
 	display = screen['display']
-	screen_id = 'screen_' + str(screen['screen_id'])
+	screen_id = 'screen' + str(screen['screen_id'])
 	screen_area = screen['screen_area']
-
-	bashCommand = 'screen -dmS ' + screen_id + ' sh -c ' + '\'' + 'omxplayer' +  ' --display ' + '"' + str(display) + '"' + ' --win ' + '"' + screen_area + '"' + ' /media/pi/toshiba/test/' + video + "; exec bash'"
+	single_quote = "'"
+	bashCommand = 'screen -dmS ' + screen_id + ' sh -c ' + single_quote + 'omxplayer' +  ' --display ' + '"' + str(display) + '"' + ' --win ' + '"' + screen_area + '"' + ' /media/pi/toshiba/test/' + video + '; exec bash' + single_quote
 	print(bashCommand)
 	#exit()
-	process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE)
+	process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+	#run_process = subprocess.run(bashCommand.split(), stdout=subprocess.PIPE)
 	output, error = process.communicate()	
 
 
