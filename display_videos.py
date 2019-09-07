@@ -25,27 +25,37 @@ def update_not_played_videos():
 
 
 # returns screen areas: splitting the screen along the x axis
-def get_screen_areas():
+
+# TODO give names to screens! anbd displays!
+def get_screens():
 	if number_of_screens_per_display > 3:
 		raise Exception('screen division for more than 3 screens not implemented yet')
-	
-	
-	if number_of_screens_per_display == 1:
-		return [str(0) + ',' + str(0) + ',' + str(screen_resolution_x) + ',' + str(screen_resolution_y)]
-			
+		
 	screens = []
-	x = 0
-	y = 0
-	x_width = int(screen_resolution_x / number_of_screens_per_display)
-	for screen in range(number_of_screens_per_display):
-		x_max = x + x_width
-		screens.append(str(x) + ',' + str(y) + ',' + str(x_max) + ',' + str(screen_resolution_y))
-		x = x_max
+	x_min = 0
+	y_min = 0
 	
+	for display in displays:
+		if number_of_screens_per_display == 1:
+			screen_area =  [str(x) + ',' + str(y) + ',' + str(screen_resolution_x) + ',' + str(screen_resolution_y)]
+			screens.append({'display': display, 'screen_id': 1, 'screen_area': screen_area})
+		else:
+			x_width = int(screen_resolution_x / number_of_screens_per_display)
+			for screen_id in range(number_of_screens_per_display):
+				x_max = x_min + x_width
+				screen_area = (str(x_min) + ',' + str(y_min) + ',' + str(x_max) + ',' + str(screen_resolution_y))
+				screens.append({'display': display, 'screen_id': screen_id, 'screen_area': screen_area}) 
+				# shift x_min to next screen
+				x_min = x_max
+			
 	return screens	
-	
 
-print(get_screen_areas())
+
+
+
+
+
+print(get_screens())
 #play_video()
 
 
