@@ -69,10 +69,10 @@ def init_players():
     # TODO throw error if less files available than screens
     
     for screen in screens:
-        if screen['screen_id'] == 1:
-            continue
+        #if screen['screen_id'] == 1:
+         #   continue
         video = available_videos[screen['screen_id']]
-        player = play_with_library(screen, get_video_path()  + video)
+        player = play_with_library(screen, video)
         players.append(player)
         players_and_screens.append({'screen': screen, 'player': player})
         played_videos.append(video)
@@ -82,19 +82,61 @@ def init_players():
     
 
 # only worked once - why??
-def play_with_library(screen, video_path):
+def play_with_library(screen, video_name):
     #print(video_path)
-    VIDEO_PATH = Path(video_path)
+    VIDEO_PATH = Path(get_video_path() + video_name)
+    
+    print(VIDEO_PATH)
   
     # try different dbus
     #  bus = ["org.mpris.MediaPlayer2.omxplayer2" ,"org.mpris.MediaPlayer2.omxplayer3",]
     # OMXPlayer(path + vid, args=['--layer', str(1), '--display', str(7)], dbus_name=bus[1])
-    player = OMXPlayer(VIDEO_PATH, args=['--display', str(7), '--win', str(screen['screen_area'])])#, dbus_name="org.mpris.MediaPlayer2.omxplayer3")
+    dbus = "org.mpris.MediaPlayer2.omxplayer" + str(screen['screen_id'])
+    player = OMXPlayer(VIDEO_PATH, args=['--display', str(7), '--win', str(screen['screen_area'])], dbus_name=dbus)
             
     #player.hide_video()
     
-    return player       
+    return player    
     
+def initiate_new_player_if_necessary(player_objects, players_and_screens):
+    new_player_object = None
+    replace_player= False
+    
+    for player_id, player_object in enumerate(player_objects):
+            #player = player_and_screen['player']
+            #screen = player_and_screen['screen']
+            #player is close to the end of its movie
+            try:
+             if player_object.position() > (player_object.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
+                replace_player = True
+            except:
+                print("could not communictate with player")
+                replace_player = True
+            
+            if replace_player:
+                subprocess.Popen(["rm", "/tmp/omxplayer*"], stdout=subprocess.PIPE)
+           
+                #get screen for player!
+                for player_and_screen in players_and_screens:
+                    if player_object == player_and_screen['player']:
+                        print("replacing player instance", player_and_screen['screen']['screen_area'])
+                        #player_and_screen['player'] = None
+                        #player_object.quit()
+                        # overwrite player object with new player
+                        print("current player", player_object)
+                        new_player_object = play_with_library(player_and_screen['screen'], get_not_played_videos()[0])
+                        print("started new video")
+                        player_id_renewed = player_id
+ 
+            # update player_objects list and players_and_screens with new player
+    if (new_player_object):
+        print("updated player", new_player_object)
+        players_and_screens[player_id_renewed]['player'] = new_player_object
+        player_objects[player_id_renewed] = new_player_object
+                
+                
+    
+    return player_objects, players_and_screens
     
 if __name__ == '__main__':
     # init display of all screens with start videos
@@ -107,21 +149,15 @@ if __name__ == '__main__':
         #not_played_videos = get_not_played_videos()
         #not_played = []
         
-        for player_object in player_objects:
-            #player = player_and_screen['player']
-            #screen = player_and_screen['screen']
-            #player is close to the end of its movie
-            if player_object.position() > (player_object.duration() - 0.5) : #temporary solution to determine when player is about to reach the end of the video
-                #get screen for player!
-                for player_and_screen in players_and_screens:
-                    if player_object == player_and_screen['player']:
-                        print("deleting player instance")
-                        #player_and_screen['player'] = None
-                        print("started new video")
-                        player_object.quit()
-                        # overwrite player object with new player
-                        player_object = play_with_library(player_and_screen['screen'], get_not_played_videos()[0])
-                        player_and_screen['player'] = player_object
+        old_player_objects = player_objects
+        player_objects, players_and_screens = initiate_new_player_if_necessary(player_objects, players_and_screens)
+        
+        if old_player_objects is not player_objects:
+            print("player objects have changed!")
+        
+        print("all players", player_objects, players_and_screens)
+
+        
     
                             
                         
