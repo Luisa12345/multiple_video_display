@@ -29,7 +29,15 @@ def get_available_files():
 
 def get_not_played_videos():
     not_played_videos = list(set(get_available_files()) - set(played_videos))
+    print("**********************************************")
+    print("not_played_videos")
     print(not_played_videos)
+    print("**********************************************")
+   
+    if len(not_played_videos) == 1:
+        print("only one video left") 
+        exit()
+        
     
     return not_played_videos
 
@@ -75,13 +83,13 @@ def init_players():
         video =  get_video_path() + available_videos[screen['screen_id']]
         player = play_with_library(screen, video)
         players.append(player)
-        screen['video_init_time'] = datetime.datetime.now()
-        screen['video'] = datetime.datetime.now()
+        screen['video_init_time'] = time.time()
+        screen['video'] = video
         screen['player'] = player
-        players_and_screens.append({'screen': screen, 'player': player})
+        #players_and_screens.append({'screen': screen, 'player': player})
         played_videos.append(video)
         
-    return players, players_and_screens
+    return screens
         
     
 
@@ -90,7 +98,7 @@ def play_with_library(screen, video_path):
     #print(video_path)
     VIDEO_PATH = Path(video_path)
     
-    print(VIDEO_PATH)
+    #print(VIDEO_PATH)
   
     # try different dbus
     #  bus = ["org.mpris.MediaPlayer2.omxplayer2" ,"org.mpris.MediaPlayer2.omxplayer3",]
@@ -103,7 +111,7 @@ def play_with_library(screen, video_path):
     return player    
 
 # TODO use only screens    
-def initiate_new_player_if_necessary(player_objects, players_and_screens, new_player_objects):
+def initiate_new_player_if_necessary(screens):
     new_player_object = None
     replace_player= False
     
@@ -112,30 +120,32 @@ def initiate_new_player_if_necessary(player_objects, players_and_screens, new_pl
     # if video init time is more than 5sec ago replace
     # delete video from played list
     
-    for player_id ,player_and_screen in enumerate(players_and_screens):
-        print(player_and_screen)
-        exit()
-        screen = player_and_screen['screen']
+    for screen in screens:
+        #print(screen)
+        #exit()
         player = screen['player']
             #player = player_and_screen['player']
             #screen = player_and_screen['screen']
             #player is close to the end of its movie
         try:
-         if player_object.position() > (player_object.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
+         if player.position() > (player.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
             #replace_player = True
-            player_object.quit()
+            #player.quit()
+            print(player.position())
 
         except:
             print("could not communictate with player")
             
             # TODO: check screen instead!! is already loading for screen???
-            if screen['video_init_time'] > datetime.datetime.now() - 5:
+            #print(time.time())
+            #print((time.time() - screen['video_init_time']) > 5)  
+            if (time.time() - screen['video_init_time']) > 5:
                 replace_player = True
             else:
                 
                 print("probably still loading")
-                print(player_object)
-                print(new_player_objects)
+                #print(player)
+                #print(new_player_objects)
                 replace_player = False
 
                 #exit()
@@ -143,30 +153,21 @@ def initiate_new_player_if_necessary(player_objects, players_and_screens, new_pl
         if replace_player:
             subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
        
-            #get screen for player!
-            for player_and_screen in players_and_screens:
-                if player_object == player_and_screen['player']:
-                    print("replacing player instance", player_and_screen['screen']['screen_area'])
-                    #player_and_screen['player'] = None
-                    # overwrite player object with new player
-                    print("current player", player_object)
-                    new_player_object = play_with_library(player_and_screen['screen'], get_video_path() + get_not_played_videos()[0])
-                    print("started new video")
-                    player_id_renewed = player_id
-                    break
+            new_player_object = play_with_library(screen, get_video_path() + get_not_played_videos()[0])
+            played_videos.append(get_not_played_videos()[0])
+            print("started new video")
+            break
  
             # update player_objects list and players_and_screens with new player
     if (new_player_object):
         time.sleep(2)
-        print("updated player", new_player_object)
-        players_and_screens[player_id_renewed]['screen']['player'] = new_player_object
-        player_objects[player_id_renewed] = new_player_object
+        #print("updated player", new_player_object)
+        screen['player'] = new_player_object
         
         #print("player_objects", player_objects)
         #exit()
-        print(players_and_screens)
                 
-    return player_objects, players_and_screens, new_player_object
+    return screens
     
 if __name__ == '__main__':
     try:
@@ -176,26 +177,14 @@ if __name__ == '__main__':
     
     # init display of all screens with start videos
     played_videos = []
-    player_objects, players_and_screens = init_players()
+    screens = init_players()
     #print(len(player_objects), players_and_screens)
     new_player_object = None
     new_player_objects = []
     
     while True:
-        print(len(player_objects))
-        if new_player_object is not None:
-            if len(new_player_objects) <= 2:
-                new_player_objects.append(new_player_object)
-            else:
-                print("more than 2 new players")
-                print(len(new_player_objects))
-                new_player_objects.pop()
-                new_player_objects.append(new_player_object)
-
-            
-        
         # TODO return ojbect id of new player - store up to 3 newly initialized players in list -> if not responding to new player (because its loading) -> do nothing
-        player_objects, players_and_screens, new_player_object = initiate_new_player_if_necessary(player_objects, players_and_screens, new_player_objects)
+        screens = initiate_new_player_if_necessary(screens)
         
         
         
