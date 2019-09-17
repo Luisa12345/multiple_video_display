@@ -14,12 +14,11 @@ screen_resolution_x = 1920
 screen_resolution_y = 1080
 
 
-
-#print("screen -dmS screen0 sh -c 'omxplayer --display \"7\" --win \"0,0,640,1080\" /media/pi/toshiba/test/MOV_0133.mp4; exec bash'")
-
 def get_video_path():
     return os.getcwd() + '/videos/'
 
+# gets all available files in video path
+# TODO filter out non-videos files
 def get_available_files():
     # directory_path = '/media/pi/toshiba/test'
     directory_path = get_video_path()
@@ -34,17 +33,15 @@ def get_not_played_videos():
     print(not_played_videos)
     print("**********************************************")
    
-    if len(not_played_videos) == 1:
-        print("only one video left") 
-        exit()
+    if len(not_played_videos) == 0:
+        print("no videos left to play") 
+        #exit()
         
     
     return not_played_videos
 
 
 # returns screen areas: splitting the screen along the x axis
-
-# TODO give names to screens! anbd displays!
 def get_screens():
     if number_of_screens_per_display > 3:
         raise Exception('screen division for more than 3 screens not implemented yet')
@@ -68,7 +65,7 @@ def get_screens():
             
     return screens  
 
-
+# iniits players for all screens with starting videos
 def init_players():
     players = []
     players_and_screens = []
@@ -76,73 +73,48 @@ def init_players():
     available_videos = get_available_files()
     
     # TODO throw error if less files available than screens
-    
     for screen in screens:
-        #if screen['screen_id'] == 1:
-         #   continue
         video =  get_video_path() + available_videos[screen['screen_id']]
         player = play_with_library(screen, video)
         players.append(player)
         screen['video_init_time'] = time.time()
         screen['video'] = video
         screen['player'] = player
-        #players_and_screens.append({'screen': screen, 'player': player})
         played_videos.append(video)
         
     return screens
         
-    
-
-# only worked once - why??
+ 
+# starts a video on screen, using omxplayer_wrapper
 def play_with_library(screen, video_path):
     #print(video_path)
     VIDEO_PATH = Path(video_path)
-    
-    #print(VIDEO_PATH)
   
-    # try different dbus
-    #  bus = ["org.mpris.MediaPlayer2.omxplayer2" ,"org.mpris.MediaPlayer2.omxplayer3",]
-    # OMXPlayer(path + vid, args=['--layer', str(1), '--display', str(7)], dbus_name=bus[1])
+    # allocate a different dbus to each screen 
     dbus = "org.mpris.MediaPlayer2.omxplayer" + str(screen['screen_id']+1)
-    player = OMXPlayer(VIDEO_PATH, args=['--display', str(7), '--win', str(screen['screen_area'])], dbus_name=dbus)
-            
-    #player.hide_video()
+    player = OMXPlayer(VIDEO_PATH, args=['--display', str(7), '--win', str(screen['screen_area'])], dbus_name=dbus)          
     
     return player    
 
-# TODO use only screens    
 def initiate_new_player_if_necessary(screens):
     new_player_object = None
     replace_player= False
     
-    
-    # TODO add video name and video_init_time to screen
-    # if video init time is more than 5sec ago replace
-    # delete video from played list
-    
     for screen in screens:
-        #print(screen)
-        #exit()
         player = screen['player']
-            #player = player_and_screen['player']
-            #screen = player_and_screen['screen']
-            #player is close to the end of its movie
+        
         try:
-         if player.position() > (player.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
-            #replace_player = True
-            #player.quit()
-            print(player.position())
-
+            #temporary solution to determine when player is about to reach the end of the video
+            if player.position() > (player.duration() - 0.2):
+                replace_player = True
+                 
         except:
             print("could not communictate with player")
             
-            # TODO: check screen instead!! is already loading for screen???
-            #print(time.time())
-            #print((time.time() - screen['video_init_time']) > 5)  
+            # replace player only if video was started less than 5 seconds ago (video loading takes time) 
             if (time.time() - screen['video_init_time']) > 5:
                 replace_player = True
             else:
-                
                 print("probably still loading")
                 #print(player)
                 #print(new_player_objects)
@@ -151,21 +123,20 @@ def initiate_new_player_if_necessary(screens):
                 #exit()
     
         if replace_player:
+            # delete omxplayer instances in tmp folder
             subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
-       
+            
+            # start new video
             new_player_object = play_with_library(screen, get_video_path() + get_not_played_videos()[0])
             played_videos.append(get_not_played_videos()[0])
             print("started new video")
             break
  
-            # update player_objects list and players_and_screens with new player
+    # if there is a new video started, give it time to load 
+    # and replace player object for screen with new player object
     if (new_player_object):
         time.sleep(2)
-        #print("updated player", new_player_object)
         screen['player'] = new_player_object
-        
-        #print("player_objects", player_objects)
-        #exit()
                 
     return screens
     
@@ -178,38 +149,8 @@ if __name__ == '__main__':
     # init display of all screens with start videos
     played_videos = []
     screens = init_players()
-    #print(len(player_objects), players_and_screens)
     new_player_object = None
-    new_player_objects = []
     
     while True:
         # TODO return ojbect id of new player - store up to 3 newly initialized players in list -> if not responding to new player (because its loading) -> do nothing
         screens = initiate_new_player_if_necessary(screens)
-        
-        
-        
-    
-                            
-                        
-                #del player['player']
-            
-            #player.quit()
-        
-            #print(player.is_playing())
-            
-            # ? connect screen and player in dict? {screeen: screen_id, player: player}  -> except -> play for screen
-            
-            # todo , try quit callback where player is added to "not playing anymore " list?
-            
-            # TODO if this doesnt work - because it is not aksing the right player - try differnt dbus first , then go via ps aux or something
-            #pi@raspberrypi:~/multiple_video_display $ ps aux | grep omx
-            #pi        3102  0.1  0.0   7676  2928 ?        Ss   16:38   0:00 /bin/bash /usr/bin/omxplayer --display 7 --win 0,0,640,1080 /home/pi/multiple_video_display/videos/test_2.mp4
-
-            # 
-          #  if not player.is_playing():
-          #      if not_played_videos not []:
-                    
-          #          player.load(not_played_videos[0])
-          #          player.play()
-          #          player.show_video()
-  
