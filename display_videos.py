@@ -6,6 +6,7 @@ from pathlib import Path
 import time
 import subprocess
 from subprocess import run
+import datetime
 
 displays = [7] # HDMI 0 = 2, HDMI 1 = 7
 number_of_screens_per_display = 2
@@ -53,7 +54,7 @@ def get_screens():
             for screen_id in range(number_of_screens_per_display):
                 x_max = x_min + x_width
                 screen_area = (str(x_min) + ',' + str(y_min) + ',' + str(x_max) + ',' + str(screen_resolution_y))
-                screens.append({'display': display, 'screen_id': screen_id, 'screen_area': screen_area}) 
+                screens.append({'display': display, 'screen_id': screen_id, 'screen_area': screen_area, 'video_init_time': None, 'video': None, 'player': None}) 
                 # shift x_min to next screen
                 x_min = x_max
             
@@ -71,9 +72,12 @@ def init_players():
     for screen in screens:
         #if screen['screen_id'] == 1:
          #   continue
-        video = available_videos[screen['screen_id']]
+        video =  get_video_path() + available_videos[screen['screen_id']]
         player = play_with_library(screen, video)
         players.append(player)
+        screen['video_init_time'] = datetime.datetime.now()
+        screen['video'] = datetime.datetime.now()
+        screen['player'] = player
         players_and_screens.append({'screen': screen, 'player': player})
         played_videos.append(video)
         
@@ -82,9 +86,9 @@ def init_players():
     
 
 # only worked once - why??
-def play_with_library(screen, video_name):
+def play_with_library(screen, video_path):
     #print(video_path)
-    VIDEO_PATH = Path(get_video_path() + video_name)
+    VIDEO_PATH = Path(video_path)
     
     print(VIDEO_PATH)
   
@@ -97,55 +101,65 @@ def play_with_library(screen, video_name):
     #player.hide_video()
     
     return player    
-    
+
+# TODO use only screens    
 def initiate_new_player_if_necessary(player_objects, players_and_screens, new_player_objects):
     new_player_object = None
     replace_player= False
     
-    for player_id, player_object in enumerate(player_objects):
+    
+    # TODO add video name and video_init_time to screen
+    # if video init time is more than 5sec ago replace
+    # delete video from played list
+    
+    for player_id ,player_and_screen in enumerate(players_and_screens):
+        print(player_and_screen)
+        exit()
+        screen = player_and_screen['screen']
+        player = screen['player']
             #player = player_and_screen['player']
             #screen = player_and_screen['screen']
             #player is close to the end of its movie
-            try:
-             if player_object.position() > (player_object.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
-                #replace_player = True
-                player_object.quit()
+        try:
+         if player_object.position() > (player_object.duration() - 0.2): #temporary solution to determine when player is about to reach the end of the video
+            #replace_player = True
+            player_object.quit()
 
-            except:
-                print("could not communictate with player")
-                
-                # TODO: check screen instead!! is already loading for screen???
-                if player_object not in new_player_objects: 
-                    replace_player = True
-                else:
-                    
-                    print("probably still loading")
-                    print(player_object)
-                    print(new_player_objects)
-                    replace_player = False
-
-                    #exit()
+        except:
+            print("could not communictate with player")
             
-            if replace_player:
-                subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
-           
-                #get screen for player!
-                for player_and_screen in players_and_screens:
-                    if player_object == player_and_screen['player']:
-                        print("replacing player instance", player_and_screen['screen']['screen_area'])
-                        #player_and_screen['player'] = None
-                        # overwrite player object with new player
-                        print("current player", player_object)
-                        new_player_object = play_with_library(player_and_screen['screen'], get_not_played_videos()[0])
-                        print("started new video")
-                        player_id_renewed = player_id
-                        break
+            # TODO: check screen instead!! is already loading for screen???
+            if screen['video_init_time'] > datetime.datetime.now() - 5:
+                replace_player = True
+            else:
+                
+                print("probably still loading")
+                print(player_object)
+                print(new_player_objects)
+                replace_player = False
+
+                #exit()
+    
+        if replace_player:
+            subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
+       
+            #get screen for player!
+            for player_and_screen in players_and_screens:
+                if player_object == player_and_screen['player']:
+                    print("replacing player instance", player_and_screen['screen']['screen_area'])
+                    #player_and_screen['player'] = None
+                    # overwrite player object with new player
+                    print("current player", player_object)
+                    new_player_object = play_with_library(player_and_screen['screen'], get_video_path() + get_not_played_videos()[0])
+                    print("started new video")
+                    player_id_renewed = player_id
+                    break
  
             # update player_objects list and players_and_screens with new player
     if (new_player_object):
         time.sleep(2)
         print("updated player", new_player_object)
-        players_and_screens[player_id_renewed]['player'] = new_player_object
+        players_and_screens[player_id_renewed]['screen']['player'] = new_player_object
         player_objects[player_id_renewed] = new_player_object
         
         #print("player_objects", player_objects)
