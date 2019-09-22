@@ -27,6 +27,7 @@ def get_available_files():
     return available_files
 
 def get_not_played_videos():
+    global played_videos
     not_played_videos = list(set(get_available_files()) - set(played_videos))
     print("**********************************************")
     print("not_played_videos")
