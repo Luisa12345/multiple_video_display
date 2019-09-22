@@ -9,7 +9,7 @@ from subprocess import run
 import datetime
 
 displays = [7] # HDMI 0 = 2, HDMI 1 = 7
-number_of_screens_per_display = 2
+number_of_screens_per_display = 3
 screen_resolution_x = 1920
 screen_resolution_y = 1080
 
@@ -35,7 +35,9 @@ def get_not_played_videos():
    
     if len(not_played_videos) == 0:
         print("no videos left to play") 
-        #exit()
+        # start playing video list from the beginning
+        not_played_videos = get_available_files()
+        played_videos = []
         
     
     return not_played_videos
@@ -68,7 +70,6 @@ def get_screens():
 # iniits players for all screens with starting videos
 def init_players():
     players = []
-    players_and_screens = []
     screens = get_screens()
     available_videos = get_available_files()
     
@@ -92,12 +93,11 @@ def play_with_library(screen, video_path):
   
     # allocate a different dbus to each screen 
     dbus = "org.mpris.MediaPlayer2.omxplayer" + str(screen['screen_id']+1)
-    player = OMXPlayer(VIDEO_PATH, args=['--display', str(7), '--win', str(screen['screen_area'])], dbus_name=dbus)          
+    player = OMXPlayer(VIDEO_PATH, args=['--display', str(screen['display']), '--win', str(screen['screen_area'])], dbus_name=dbus)          
     
     return player    
 
 def initiate_new_player_if_necessary(screens):
-    new_player_object = None
     replace_player= False
     
     for screen in screens:
@@ -119,25 +119,18 @@ def initiate_new_player_if_necessary(screens):
                 #print(player)
                 #print(new_player_objects)
                 replace_player = False
-
-                #exit()
     
         if replace_player:
             # delete omxplayer instances in tmp folder
             subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
             
             # start new video
-            new_player_object = play_with_library(screen, get_video_path() + get_not_played_videos()[0])
+            screen['player'] = play_with_library(screen, get_video_path() + get_not_played_videos()[0])
             played_videos.append(get_not_played_videos()[0])
             print("started new video")
             break
  
-    # if there is a new video started, give it time to load 
-    # and replace player object for screen with new player object
-    if (new_player_object):
-        time.sleep(2)
-        screen['player'] = new_player_object
-                
+                   
     return screens
     
 if __name__ == '__main__':
@@ -149,7 +142,6 @@ if __name__ == '__main__':
     # init display of all screens with start videos
     played_videos = []
     screens = init_players()
-    new_player_object = None
     
     while True:
         # TODO return ojbect id of new player - store up to 3 newly initialized players in list -> if not responding to new player (because its loading) -> do nothing
