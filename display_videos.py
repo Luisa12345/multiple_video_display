@@ -9,19 +9,21 @@ from subprocess import run
 import datetime
 
 displays = [7] # HDMI 0 = 2, HDMI 1 = 7
-number_of_screens_per_display = 3
+number_of_screens_per_display = 2
 screen_resolution_x = 1920
 screen_resolution_y = 1080
 
 
 def get_video_path():
-    return os.getcwd() + '/videos/'
+    return '/home/pi/Desktop/converted/'
+    #return os.getcwd() + '/videos/'
 
 # gets all available files in video path
 # TODO filter out non-videos files
 def get_available_files():
     # directory_path = '/media/pi/toshiba/test'
     directory_path = get_video_path()
+        
     available_files = [f for f in listdir(directory_path) if isfile(join(directory_path, f))]
     
     return available_files
@@ -139,6 +141,10 @@ if __name__ == '__main__':
         subprocess.call("rm /tmp/omxplayer*", shell=True, stdout=subprocess.PIPE)
     except:
         print("do nothing")
+    
+    
+    while len(listdir(get_video_path())) < number_of_screens_per_display:
+        print('not enough videos in folder')
     
     # init display of all screens with start videos
     played_videos = []
