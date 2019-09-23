@@ -1,0 +1,45 @@
+You find all the code on 
+https://github.com/Luisa12345/multiple_video_display
+
+
+
+1) Mount Hard Drive
+plug in harddrive on top blue usb
+in terminal
+cd multiple_video_display
+sh mount_hdd.sh 
+
+2) Display videos
+[cd multiple_video_display]
+python3 display_videos.py
+
+
+
+
+Debugging - help
+3) Test video player without python, if necessary
+
+ omxplayer --display "7" /home/pi/Desktop/video.mp4
+
+
+4) Convert videos on the raspberry
+
+openb convert_videos.py and set folders for unconverted and converted videos
+
+[cd multiple_video_display]
+python3 convert_videos.py
+
+5) Convert videos on windows
+install ffmpeg (try with choco)
+https://video.stackexchange.com/questions/20495/how-do-i-set-up-and-use-ffmpeg-in-windows
+
+execute python script 
+python3 convert_videos.py
+
+openb convert_videos.py and set folders for unconverted and converted videos
+! ON WINDOWS you might have to use \ instead of / in the path
+
+if you want to send videos over network
+x) Network folder - restart samba, if folder on hdd doesnt appear
+ sudo systemctl restart smbd
+
