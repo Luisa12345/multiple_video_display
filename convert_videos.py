@@ -20,7 +20,7 @@ def convert_video(video):
     video_name = video[:-4]
 
     video_path_unconverted = directory_path_unconverted + video
-    video_path_converted = directory_path_converted + video_name + '.h264'
+    video_path_converted = directory_path_converted + video_name + '.mp4'
     
     # convert video if not converted yet
     if not os.path.exists(video_path_converted):
@@ -36,5 +36,5 @@ def convert_video(video):
 while True:
     for video in listdir(directory_path_unconverted):
         if isfile(join(directory_path_unconverted, video)):
-            print(video)
             convert_video(video)
+    time.sleep(2)
