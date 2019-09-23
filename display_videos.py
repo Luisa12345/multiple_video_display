@@ -9,13 +9,16 @@ from subprocess import run
 import datetime
 
 displays = [7] # HDMI 0 = 2, HDMI 1 = 7
-number_of_screens_per_display = 2
+
+# Change numbers of videos of screen here
+number_of_screens_per_display = 3
 screen_resolution_x = 1920
 screen_resolution_y = 1080
 
 
 def get_video_path():
-    return '/home/pi/Desktop/converted/'
+    return '/media/pi/toshiba/screaming_videos/'
+    #return '/home/pi/Desktop/converted/'
     #return os.getcwd() + '/videos/'
 
 # gets all available files in video path
