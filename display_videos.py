@@ -117,7 +117,7 @@ def initiate_new_player_if_necessary(screens):
         except:
             print("could not communictate with player")
             
-            # replace player only if video was started less than 5 seconds ago (video loading takes time) 
+            # replace player only if video was started more than 5 seconds ago (video loading takes time) 
             if (time.time() - screen['video_init_time']) > 5:
                 replace_player = True
             else:
